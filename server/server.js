@@ -14,13 +14,21 @@ app.use(express.json())
 // Find yt-dlp path
 let ytDlpPath = 'yt-dlp'
 
+// Work around YouTube web/tv client SABR and nsig extraction failures
+const YT_DLP_COMMON_ARGS = [
+  '--extractor-args', 'youtube:player_client=android,web'
+]
+
 const findYtDlp = async () => {
   const possiblePaths = [
-    'yt-dlp',
-    '/usr/local/bin/yt-dlp',
     '/opt/homebrew/bin/yt-dlp',
-    `${process.env.HOME}/Library/Python/3.9/bin/yt-dlp`,
-    `${process.env.HOME}/.local/bin/yt-dlp`
+    '/usr/local/bin/yt-dlp',
+    'yt-dlp',
+    `${process.env.HOME}/.local/bin/yt-dlp`,
+    `${process.env.HOME}/Library/Python/3.12/bin/yt-dlp`,
+    `${process.env.HOME}/Library/Python/3.11/bin/yt-dlp`,
+    `${process.env.HOME}/Library/Python/3.10/bin/yt-dlp`,
+    `${process.env.HOME}/Library/Python/3.9/bin/yt-dlp`
   ]
   
   for (const path of possiblePaths) {
@@ -44,22 +52,31 @@ const findYtDlp = async () => {
 }
 
 // Get video information and available formats
-app.post('/api/video-info', async (req, res) => {
-  const { url } = req.body
-  
-  if (!url) {
-    return res.status(400).json({ error: 'URL is required' })
+function dedupeByHeight(formats) {
+  const byHeight = new Map()
+  for (const format of formats) {
+    const existing = byHeight.get(format.height)
+    if (!existing || (format.filesize || 0) > (existing.filesize || 0)) {
+      byHeight.set(format.height, format)
+    }
   }
+  return [...byHeight.values()].sort((a, b) => b.height - a.height)
+}
 
-  try {
-    const { stdout } = await execAsync(`${ytDlpPath} -J "${url}"`)
-    const info = JSON.parse(stdout)
-    
-    // Extract and organize formats
-    const allFormats = info.formats || []
-    
-    // Get combined video+audio formats (best quality)
-    const combinedFormats = allFormats
+function dedupeByAbr(formats) {
+  const byAbr = new Map()
+  for (const format of formats) {
+    const key = format.abr || format.format_id
+    if (!byAbr.has(key)) {
+      byAbr.set(key, format)
+    }
+  }
+  return [...byAbr.values()].sort((a, b) => (b.abr || 0) - (a.abr || 0))
+}
+
+function buildFormats(allFormats) {
+  const combinedFormats = dedupeByHeight(
+    allFormats
       .filter(f => f.vcodec && f.vcodec !== 'none' && f.acodec && f.acodec !== 'none' && f.height)
       .map(f => ({
         format_id: f.format_id,
@@ -71,11 +88,10 @@ app.post('/api/video-info', async (req, res) => {
         type: 'combined',
         height: f.height
       }))
-      .sort((a, b) => b.height - a.height)
-      .slice(0, 5)
-    
-    // Get video-only formats (for manual merging)
-    const videoFormats = allFormats
+  )
+
+  const videoFormats = dedupeByHeight(
+    allFormats
       .filter(f => f.vcodec && f.vcodec !== 'none' && f.height && (!f.acodec || f.acodec === 'none'))
       .map(f => ({
         format_id: `${f.format_id}+bestaudio`,
@@ -87,11 +103,10 @@ app.post('/api/video-info', async (req, res) => {
         type: 'video',
         height: f.height
       }))
-      .sort((a, b) => b.height - a.height)
-      .slice(0, 5)
-    
-    // Get audio-only formats
-    const audioFormats = allFormats
+  )
+
+  const audioFormats = dedupeByAbr(
+    allFormats
       .filter(f => f.acodec && f.acodec !== 'none' && (!f.vcodec || f.vcodec === 'none'))
       .map(f => ({
         format_id: f.format_id,
@@ -100,12 +115,71 @@ app.post('/api/video-info', async (req, res) => {
         filesize: f.filesize,
         vcodec: f.vcodec,
         acodec: f.acodec,
-        type: 'audio'
+        type: 'audio',
+        abr: f.abr
       }))
-      .slice(0, 3)
+  )
+
+  return [...combinedFormats, ...videoFormats, ...audioFormats]
+}
+
+function getPreviewStream(allFormats, info) {
+  const combined = allFormats
+    .filter(f => f.vcodec && f.vcodec !== 'none' && f.acodec && f.acodec !== 'none' && f.url && f.height <= 720)
+    .sort((a, b) => b.height - a.height)
+
+  if (combined.length) {
+    return {
+      streamUrl: combined[0].url,
+      vcodec: combined[0].vcodec,
+      acodec: combined[0].acodec
+    }
+  }
+
+  const video = allFormats
+    .filter(f => f.vcodec && f.vcodec !== 'none' && f.url && f.height <= 720)
+    .sort((a, b) => b.height - a.height)
+
+  if (video.length) {
+    return {
+      streamUrl: video[0].url,
+      vcodec: video[0].vcodec,
+      acodec: 'none'
+    }
+  }
+
+  const audio = allFormats.filter(f => f.acodec && f.acodec !== 'none' && f.url)
+  if (audio.length) {
+    return {
+      streamUrl: audio[0].url,
+      vcodec: 'none',
+      acodec: audio[0].acodec
+    }
+  }
+
+  return {
+    streamUrl: info.url || null,
+    vcodec: info.vcodec,
+    acodec: info.acodec
+  }
+}
+
+app.post('/api/video-info', async (req, res) => {
+  const { url } = req.body
+  
+  if (!url) {
+    return res.status(400).json({ error: 'URL is required' })
+  }
+
+  try {
+    const { stdout } = await execAsync(
+      `${ytDlpPath} -J --extractor-args "youtube:player_client=android,web" "${url}"`
+    )
+    const info = JSON.parse(stdout)
     
-    // Combine formats: combined first, then video with auto-merge, then audio
-    const formats = [...combinedFormats, ...videoFormats, ...audioFormats]
+    const allFormats = info.formats || []
+    const formats = buildFormats(allFormats)
+    const preview = getPreviewStream(allFormats, info)
 
     res.json({
       info: {
@@ -114,9 +188,12 @@ app.post('/api/video-info', async (req, res) => {
         duration: formatDuration(info.duration),
         uploader: info.uploader,
         view_count: info.view_count,
-        upload_date: info.upload_date
+        upload_date: info.upload_date,
+        vcodec: preview.vcodec,
+        acodec: preview.acodec
       },
-      formats
+      formats,
+      streamUrl: preview.streamUrl
     })
   } catch (error) {
     console.error('Error fetching video info:', error)
@@ -137,6 +214,7 @@ app.post('/api/download', async (req, res) => {
       '-f', format,
       '--no-playlist',
       '--newline',
+      ...YT_DLP_COMMON_ARGS,
       '-o', '-',
       url
     ])
@@ -189,6 +267,7 @@ app.post('/api/download-progress', async (req, res) => {
       '--newline',
       '--progress',
       '--no-warnings',
+      ...YT_DLP_COMMON_ARGS,
       '-o', '-',
       url
     ])
@@ -225,7 +304,9 @@ app.post('/api/stream-info', async (req, res) => {
   }
 
   try {
-    const { stdout } = await execAsync(`${ytDlpPath} -J -f "best[height<=720]" "${url}"`)
+    const { stdout } = await execAsync(
+      `${ytDlpPath} -J -f "best[height<=720]" --extractor-args "youtube:player_client=android,web" "${url}"`
+    )
     const info = JSON.parse(stdout)
     
     // Get the best quality stream URL for preview

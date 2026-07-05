@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shaik Ijaz Ahammad - Resume</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Calibri', 'Arial', sans-serif;
+            line-height: 1.4;
+            color: #333;
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 0.4in;
+            background: white;
+            font-size: 11pt;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 15px;
+        }
+        
+        .name {
+            font-size: 24pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .contact-info {
+            font-size: 10pt;
+            color: #555;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .contact-info a {
+            color: #2980b9;
+            text-decoration: none;
+        }
+        
+        .section {
+            margin-bottom: 18px;
+        }
+        
+        .section-title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #2c3e50;
+            border-bottom: 1px solid #bdc3c7;
+            padding-bottom: 2px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        
+        .summary {
+            font-size: 10pt;
+            text-align: justify;
+            line-height: 1.4;
+        }
+        
+        .job {
+            margin-bottom: 12px;
+        }
+        
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 3px;
+        }
+        
+        .job-title {
+            font-weight: bold;
+            font-size: 11pt;
+            color: #2c3e50;
+        }
+        
+        .job-date {
+            font-size: 10pt;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        .company {
+            font-size: 10pt;
+            color: #34495e;
+            margin-bottom: 4px;
+        }
+        
+        .achievements {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .achievements li {
+            font-size: 10pt;
+            margin-bottom: 2px;
+            padding-left: 12px;
+            position: relative;
+            text-align: justify;
+        }
+        
+        .achievements li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #3498db;
+        }
+        
+        .skills-table {
+            width: 100%;
+            font-size: 10pt;
+        }
+        
+        .skills-table td {
+            padding: 3px 8px 3px 0;
+            vertical-align: top;
+        }
+        
+        .skill-category {
+            font-weight: bold;
+            color: #2c3e50;
+            width: 120px;
+        }
+        
+        .education-item {
+            margin-bottom: 8px;
+        }
+        
+        .degree {
+            font-weight: bold;
+            font-size: 10pt;
+        }
+        
+        .institution {
+            font-size: 10pt;
+            color: #555;
+        }
+        
+        .project-item {
+            margin-bottom: 6px;
+            font-size: 10pt;
+        }
+        
+        .project-title {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .cert-list {
+            font-size: 9pt;
+            line-height: 1.3;
+        }
+        
+        .cert-list li {
+            margin-bottom: 2px;
+        }
+        
+        .cert-list a {
+            color: #2980b9;
+            text-decoration: none;
+        }
+        
+        .activities {
+            font-size: 10pt;
+        }
+        
+        .activities li {
+            margin-bottom: 3px;
+        }
+        
+        @media print {
+            body {
+                padding: 0.3in;
+            }
+            .section {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="name">SHAIK IJAZ AHAMMAD</div>
+        <div class="contact-info">
+            <span>+91 9494481505</span>
+            <span>Hyderabad, Telangana</span>
+            <a href="mailto:ijazahamed.cse@gmail.com">ijazahamed.cse@gmail.com</a>
+            <a href="https://linkedin.com/in/ijazahamed108">LinkedIn</a>
+            <a href="https://github.com/ijazahamed108">GitHub</a>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Professional Summary</div>
+        <div class="summary">
+            Full Stack Developer with over 4.9 years of experience building efficient, scalable, and user-friendly web applications using MongoDB, Express.js, React.js, and Node.js. Proactively integrated AI-powered tools and workflows to streamline development, enhance code quality, and accelerate delivery. Passionate about modern web technologies and committed to continuous learning to stay ahead in a rapidly evolving tech landscape.
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Experience</div>
+        
+        <div class="job">
+            <div class="job-header">
+                <div class="job-title">Engineer</div>
+                <div class="job-date">June 2024 - Present</div>
+            </div>
+            <div class="company">Carrier Technologies Limited, Hyderabad</div>
+            <ul class="achievements">
+                <li>Designed and developed an Integration Adapter from scratch using AWS Lambda, SQS, SNS, EventBridge, and IoT Core, enabling real-time ingestion and processing of sensor data from Toshiba chiller devices.</li>
+                <li>Built a dynamic, on-demand Report Download Dashboard in React and TypeScript, Node.js, and MongoDB allowing users to filter and download time-series data; implemented linear interpolation to intelligently fill data gaps within selected date ranges.</li>
+                <li>Optimized observability workflow by migrating logs from AWS CloudWatch to New Relic with OpenTelemetry, reducing cloud costs by ~30 percent.</li>
+                <li>Enhanced search and dashboard performance by implementing a cache layer with Redis and optimizing GraphQL queries, resulting in ~60 percent faster search and 80 percent dashboard load time improvement.</li>
+                <li>Created a serverless OTA microservice to automate gateway device firmware updates, enabling seamless over-the-air upgrades.</li>
+                <li>Followed test-driven development practices with Jest for robust and maintainable code and utilized AI-powered tools Cody, AmazonQ, Microsoft Co-Pilot to accelerate delivery and ensure code quality.</li>
+            </ul>
+        </div>
+
+        <div class="job">
+            <div class="job-header">
+                <div class="job-title">Software Developer</div>
+                <div class="job-date">July 2023 - May 2024</div>
+            </div>
+            <div class="company">Mintbook (K-Nomics Techno Solutions Private Limited), Bengaluru</div>
+            <ul class="achievements">
+                <li>Contributed to Bihar's Department of Education's digital transformation by building a <a href="https://vidyabodh.bihar.gov.in/">Digital Library</a> enabling e-learning for thousands of students across the state of Bihar.</li>
+                <li>Developed a Content Management and Analytics System using ReactJS, TypeScript, and Node.js where publishers can log in and add content, which is then verified, encrypted, and stored in Azure Cloud to stream across Mintbook Digital Libraries and to download usage reports.</li>
+                <li>Developed a robust Content Utilization Engine that captured detailed user activity—including eBook and video engagement metrics, time spent per resource, and behavioral trends—for actionable analytics, personalized recommendations, and accurate billing/license utilization calculations.</li>
+                <li>Collaborated with cybersecurity experts from SecureEyes to enhance data transmission security. Implemented rigorous data sanitization and encryption standards to mitigate XSS attacks and bolster application defenses.</li>
+            </ul>
+        </div>
+
+        <div class="job">
+            <div class="job-header">
+                <div class="job-title">Software Engineer</div>
+                <div class="job-date">July 2021 - June 2023</div>
+            </div>
+            <div class="company">BYJU'S (Think and Learn Private Limited), Bengaluru</div>
+            <ul class="achievements">
+                <li>Owned Aakash CRP and Aakash Digital (BYJU's Exam Prep) modules. Designed database schemas, scholarship and voucher logic, and built the modules from scratch.</li>
+                <li>Implemented Redis caching, resulting in ~80 percent faster loading time on the product page in the KART microservice.</li>
+                <li>Developed a self-serve upload utility using React, Redux, and TypeScript to reduce manual effort in seeding pricing data in Postgres, enabling near-instant synchronization of the Aakash Pricing Engine, saving time and effort for business leadership.</li>
+                <li>Integrated Razorpay and Bajaj payment gateways to enable seamless EMI and non-EMI transactions in the application.</li>
+                <li>Wrote AWS Lambda functions and exposed APIs to enable bulk order punching.</li>
+                <li>Designed and developed rule engines for vouchers and sales programs for the Catalogue project using Java and Spring Boot.</li>
+                <li>Worked on database migration from MongoDB to Postgres.</li>
+                <li>Actively refactoring, optimization of the codebase and troubleshooting the application using Datadog and Coralogix.</li>
+                <li>Wrote reusable data-fix scripts to identify erroneous orders, park them, and send to downstream systems for reprocessing.</li>
+            </ul>
+        </div>
+
+        <div class="job">
+            <div class="job-header">
+                <div class="job-title">Programmer Analyst Trainee</div>
+                <div class="job-date">Nov 2020 - June 2021</div>
+            </div>
+            <div class="company">Cognizant Technology Solutions, Chennai</div>
+            <ul class="achievements">
+                <li>Worked on Bank of New York Mellon's Big Data project.</li>
+                <li>Optimized legacy SQL queries.</li>
+                <li>Implemented multiple UI enhancements using React.js, jQuery, and JavaScript.</li>
+                <li>Wrote Python scripts to detect noise in data and transform it into required formats.</li>
+                <li>Explored AWS EC2 and S3 services, and Big Data technologies including Hadoop and PySpark.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Skills</div>
+        <table class="skills-table">
+            <tr>
+                <td class="skill-category">Frontend</td>
+                <td>ReactJs, Typescript, Javascript, Redux, HTML5, CSS3, JQuery, Bootstrap, MUI, Antd</td>
+            </tr>
+            <tr>
+                <td class="skill-category">Backend</td>
+                <td>NodeJs, ExpressJs, Python, GraphQL, REST APIs</td>
+            </tr>
+            <tr>
+                <td class="skill-category">Databases</td>
+                <td>MongoDB, PostgreSQL, DynamoDB, Redis</td>
+            </tr>
+            <tr>
+                <td class="skill-category">Cloud Technologies</td>
+                <td>AWS (Lambda, S3, EC2, SQS, SNS, EventBridge, API GW, IoT Core), Docker</td>
+            </tr>
+            <tr>
+                <td class="skill-category">Communication</td>
+                <td>Fluent (Read, Write and Speak) in English, Hindi and Telugu languages</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Education</div>
+        <div class="education-item">
+            <div class="degree">B.Tech, Computer Science and Engineering</div>
+            <div class="institution">Rajeev Gandhi Memorial College of Engineering and Technology - 8.0 CGPA (2020)</div>
+        </div>
+        <div class="education-item">
+            <div class="degree">Intermediate (Maths, Physics and Chemistry), BIEAP</div>
+            <div class="institution">Smt.Theressa Junior College - 94.9 percentage (2016)</div>
+        </div>
+        <div class="education-item">
+            <div class="degree">SSC, BSEAP</div>
+            <div class="institution">Depaul High School - 9.3 GPA (2014)</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Personal Projects</div>
+        <div class="project-item">
+            <span class="project-title">Grameena Health Care Portal - Major Project in College:</span> Built a PHP- and JavaScript-based healthcare portal for rural centers that shares scheme information and real-time doctor availability, adds video-enabled attendance monitoring for administrators, and streamlines stock tracking; also implemented doctor self-attendance features to improve transparency and operational management across facilities.
+        </div>
+        <div class="project-item">
+            <span class="project-title">Video Preview and Down-loader:</span> A modern React, Nodejs application for downloading videos from YouTube, Facebook, Instagram, and other platforms with in-app preview capabilities.
+        </div>
+        <div class="project-item">
+            <span class="project-title">MovieList App:</span> IMDB style movie listing app built with React and bootstrap.
+        </div>
+        <div class="project-item">
+            <span class="project-title">Two factor Authentication App:</span> Authentication middleware with JWT and OTP.
+        </div>
+        <div class="project-item">
+            <span class="project-title">Expense Splitter:</span> ExpressJs App to track and store Split among friends.
+        </div>
+        <div class="project-item">
+            <span class="project-title">Tax Computation App:</span> Full stack application built using React, Node, Express, JWT authentication, MongoDB, Hosted in Vercel.
+        </div>
+        <div class="project-item">
+            <span class="project-title">Portfolio site:</span> Website built with HTML, CSS and BootStrap. <a href="https://ijazahamed108.github.io/Resume/">checkout here</a>
+        </div>
+        <div class="project-item">
+            <span class="project-title">Find my Projects here:</span> <a href="https://github.com/ijazahamed108">GitHub</a>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Certifications</div>
+        <ul class="cert-list">
+            <li>The Complete 2021 Web Development Bootcamp — <a href="https://www.udemy.com/certificate/UC-593e6348-b78c-43fc-8206-696a02ea86d5/">[verify]</a></li>
+            <li>AWS Lambda and the Serverless Framework — Hands-on Learning — <a href="https://www.udemy.com/certificate/UC-657e904f-f0e6-490c-a2fd-8d793cc254bb/">[verify]</a></li>
+            <li>AWS Amazon S3 Mastery BootCamp — <a href="https://www.udemy.com/certificate/UC-49662fb9-c6da-4e10-a426-bba291ed9a63/">[verify]</a></li>
+            <li>AWS Fundamentals: Going Cloud Native — <a href="https://www.coursera.org/account/accomplishments/verify/FMEG37UY9M8D">[verify]</a></li>
+            <li>Apache Spark 3 — Spark Programming in Python for Beginners — <a href="https://www.udemy.com/certificate/UC-36059c04-e3c8-4047-be7a-b7d6f7b9a3f3/">[verify]</a></li>
+            <li>Python Data Structures — <a href="https://www.coursera.org/account/accomplishments/verify/Q4FR8HV9WW9B">[verify]</a></li>
+            <li>Introduction to Git and GitHub — <a href="https://www.coursera.org/account/accomplishments/verify/792ADQRBA9NW">[verify]</a></li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Extra-Curricular Activities</div>
+        <ul class="activities">
+            <li>I post travel vlogs and Gaming Content in my YouTube Channel <a href="https://youtube.com/@ijazahamed108?feature=shared">GETWAY</a> and <a href="https://instagram.com/ijaz__ahamed">Instagram</a>.</li>
+            <li>Member of NSS, Environmental Awareness Team RGMCET-2019, conducted Seminars in Rural schools to spread awareness on campus hygiene and classroom ethics.</li>
+            <li>Technical Coordinator RGMCET, 2020.</li>
+        </ul>
+    </div>
+</body>
+</html>
