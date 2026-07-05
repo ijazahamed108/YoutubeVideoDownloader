@@ -1,13 +1,20 @@
 import { useState } from 'react'
 import axios from 'axios'
-import { Play, Loader2, AlertCircle } from 'lucide-react'
+import { Play, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
+import FormatSelector from './FormatSelector'
+import { triggerVideoDownload } from '../utils/videoDownload'
 
 const MediaPlayer = () => {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [mediaInfo, setMediaInfo] = useState(null)
+  const [formats, setFormats] = useState([])
+  const [selectedFormat, setSelectedFormat] = useState('')
   const [error, setError] = useState('')
   const [streamUrl, setStreamUrl] = useState('')
+  const [downloadStatus, setDownloadStatus] = useState('')
+  const [downloadProgress, setDownloadProgress] = useState(0)
+  const [isDownloading, setIsDownloading] = useState(false)
 
   const loadMedia = async () => {
     if (!url.trim()) return
@@ -15,16 +22,52 @@ const MediaPlayer = () => {
     setLoading(true)
     setError('')
     setMediaInfo(null)
+    setFormats([])
+    setSelectedFormat('')
     setStreamUrl('')
+    setDownloadStatus('')
+    setDownloadProgress(0)
     
     try {
-      const response = await axios.post('/api/stream-info', { url })
+      const response = await axios.post('/api/video-info', { url })
       setMediaInfo(response.data.info)
+      setFormats(response.data.formats)
       setStreamUrl(response.data.streamUrl)
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to load media')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const downloadVideo = async () => {
+    if (!selectedFormat || !mediaInfo) return
+
+    setIsDownloading(true)
+    setDownloadProgress(0)
+    setError('')
+
+    try {
+      await triggerVideoDownload({
+        url,
+        formatId: selectedFormat,
+        formats,
+        title: mediaInfo.title,
+        onProgress: setDownloadProgress,
+        onStatus: setDownloadStatus
+      })
+
+      setDownloadStatus('Download completed!')
+      setTimeout(() => {
+        setDownloadStatus('')
+        setDownloadProgress(0)
+      }, 3000)
+    } catch (err) {
+      setError(err.response?.data?.error || 'Download failed')
+      setDownloadStatus('')
+      setDownloadProgress(0)
+    } finally {
+      setIsDownloading(false)
     }
   }
 
@@ -64,35 +107,44 @@ const MediaPlayer = () => {
               {error}
             </div>
           )}
+
+          {downloadStatus && !isDownloading && (
+            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-md text-green-700">
+              <CheckCircle className="w-4 h-4" />
+              {downloadStatus}
+            </div>
+          )}
         </div>
       </div>
 
-      {mediaInfo && streamUrl && (
+      {mediaInfo && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">{mediaInfo.title}</h3>
           
           <div className="space-y-4">
-            {mediaInfo.vcodec !== 'none' ? (
-              <video
-                controls
-                className="w-full max-h-96 rounded-lg"
-                poster={mediaInfo.thumbnail}
-              >
-                <source src={streamUrl} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-            ) : (
-              <div className="space-y-4">
-                <img
-                  src={mediaInfo.thumbnail}
-                  alt={mediaInfo.title}
-                  className="w-full max-h-64 object-cover rounded-lg"
-                />
-                <audio controls className="w-full">
-                  <source src={streamUrl} type="audio/mpeg" />
-                  Your browser does not support the audio tag.
-                </audio>
-              </div>
+            {streamUrl && (
+              mediaInfo.vcodec !== 'none' ? (
+                <video
+                  controls
+                  className="w-full max-h-96 rounded-lg"
+                  poster={mediaInfo.thumbnail}
+                >
+                  <source src={streamUrl} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              ) : (
+                <div className="space-y-4">
+                  <img
+                    src={mediaInfo.thumbnail}
+                    alt={mediaInfo.title}
+                    className="w-full max-h-64 object-cover rounded-lg"
+                  />
+                  <audio controls className="w-full">
+                    <source src={streamUrl} type="audio/mpeg" />
+                    Your browser does not support the audio tag.
+                  </audio>
+                </div>
+              )
             )}
             
             <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-600">
@@ -105,6 +157,17 @@ const MediaPlayer = () => {
                 <p><strong>Upload Date:</strong> {mediaInfo.upload_date}</p>
               </div>
             </div>
+
+            <FormatSelector
+              formats={formats}
+              selectedFormat={selectedFormat}
+              onSelectFormat={setSelectedFormat}
+              onDownload={downloadVideo}
+              isDownloading={isDownloading}
+              downloadProgress={downloadProgress}
+              downloadStatus={downloadStatus}
+              name="preview-format"
+            />
           </div>
         </div>
       )}

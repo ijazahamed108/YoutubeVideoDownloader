@@ -5,7 +5,13 @@ echo "🚀 Starting Video Downloader Application"
 # Check if yt-dlp is installed
 if ! command -v yt-dlp &> /dev/null; then
     echo "📦 Installing yt-dlp..."
-    pip3 install yt-dlp
+    if command -v brew &> /dev/null; then
+        brew install yt-dlp
+    elif command -v pipx &> /dev/null; then
+        pipx install yt-dlp
+    else
+        pip3 install --user yt-dlp || pip3 install yt-dlp --break-system-packages
+    fi
 fi
 
 # Install frontend dependencies

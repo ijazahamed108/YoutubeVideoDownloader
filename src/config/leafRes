@@ -1,0 +1,165 @@
+\documentclass{resume} % Use the custom resume.cls style
+
+\usepackage[left=0.4 in,top=0.4in,right=0.4 in,bottom=0.4in]{geometry} % Document margins
+\newcommand{\tab}[1]{\hspace{.2667\textwidth}\rlap{#1}} 
+\newcommand{\itab}[1]{\hspace{0em}\rlap{#1}}
+\name{Shaik Ijaz Ahammad} % Your name
+% You can merge both of these into a single line, if you do not have a website.
+\address{+91 9494481505 \\ Hyderabad, Telangana.} 
+\address{\href{mailto:ijazahamed.cse@gmail.com}{email} \\ \href{https://linkedin.com/in/ijazahamed108}{LinkedIn} \\ \href{https://github.com/ijazahamed108}{GitHub}}  %
+
+\begin{document}
+
+%----------------------------------------------------------------------------------------
+%	OBJECTIVE
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{Professional Summary}
+
+{Full Stack Developer with over 4.9 years of experience building efficient, scalable, and user-friendly web applications using MongoDB,
+Express.js, React.js, and Node.js. Proactively integrated AI-powered tools and workflows to streamline development, enhance code quality,
+and accelerate delivery. Passionate about modern web technologies and committed to continuous learning to stay ahead in a rapidly
+evolving tech landscape.}
+
+
+\end{rSection}
+%----------------------------------------------------------------------------------------
+%	EDUCATION SECTION
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{Education}
+
+{\bf SSC, BSEAP}\\
+Depaul High School - 9.3 GPA\hfill {2014}
+
+{\bf Intermediate(Maths, Physics and Chemistry), BIEAP}\\
+Smt.Theressa Junior College - 94.9 percentage\hfill {2016}
+
+{\bf B.Tech, Computer Science and Engineering}\\
+Rajeev Gandhi Memorial College of Engineering and Technology 8.0 CGPA\hfill {2020}
+%Minor in Linguistics \smallskip \\
+%Member of Eta Kappa Nu \\
+%Member of Upsilon Pi Epsilon \\
+
+
+\end{rSection}
+
+%----------------------------------------------------------------------------------------
+% TECHINICAL STRENGTHS	
+%----------------------------------------------------------------------------------------
+\begin{rSection}{SKILLS}
+
+\begin{tabular}{ @{} >{\bfseries}l @{\hspace{6ex}} l }
+Frontend & ReactJs, Typescript, Javascript, Redux, HTML5, CSS3, JQuery, Bootstrap,MUI,Antd.
+\\
+Backend & NodeJs, ExpressJs, Python, GraphQL, REST APIs\\
+Databases & MongoDB, PostgreSQL, DynamoDB, Redis.\\
+Cloud Technologies & AWS (Lambda, S3, EC2, SQS, SNS, EventBridge, API GW, IoT Core), Docker.\\
+Communication & Fluent(Read, Write and Speak) in English, Hindi and Telugu languages.\\
+\end{tabular}\\
+\end{rSection}
+
+\begin{rSection}{EXPERIENCE}
+
+\textbf{Engineer} \hfill June 2024 - present\\
+Carrier Technologies Limited  \hfill \textit{Hyderabad}
+\begin{itemize}
+\itemsep -3pt {}
+\item Designed and developed an Integration Adapter from scratch using AWS Lambda, SQS, SNS, EventBridge, and IoT Core, enabling real-time ingestion and processing of sensor data from Toshiba chiller devices.
+\item Built a dynamic, on-demand Report Download Dashboard in React and TypeScript, Node.js, and MongoDB allowing users to filter and download time-series data; implemented linear interpolation to intelligently fill data gaps within selected date ranges.
+\item Optimized observability workflow by migrating logs from AWS CloudWatch to New Relic with OpenTelemetry, reducing cloud costs by ~30 percent.
+\item Enhanced search and dashboard performance by implementing a cache layer with Redis and optimizing GraphQL queries, resulting in ~60 percent faster search and 80 percent dashboard load time improvement.
+\item Created a serverless OTA microservice to automate gateway device firmware updates, enabling seamless over-the-air upgrades.
+\item Followed test-driven development practices with Jest for robust and maintainable code and utilized AI-powered tools Cody, AmazonQ, Microsoft Co-Pilot to accelerate delivery and ensure code quality.
+\end{itemize}
+ 
+\textbf{Software Developer} \hfill July 2023 - May 2024\\
+Mintbook (K-Nomics Techno Solutions Private Limited) \hfill \textit{Bengaluru}
+ \begin{itemize}
+\itemsep -3pt {}
+\item Contributed to Bihar’s Department of Education’s digital transformation by building a \href{ https://vidyabodh.bihar.gov.in/}{Digital Library} enabling e-learning for thousands of students across the state of Bihar.
+\item Developed a Content Management and Analytics System using ReactJS, TypeScript, and Node.js where publishers can log in and add content, which is then verified, encrypted, and stored in Azure Cloud to stream across Mintbook Digital Libraries and to download usage reports.
+\item Developed a robust Content Utilization Engine that captured detailed user activity—including eBook and video engagement metrics, time spent per resource, and behavioral trends—for actionable analytics, personalized recommendations, and accurate billing/license utilization calculations.
+\item Collaborated with cybersecurity experts from SecureEyes to enhance data transmission security. Implemented rigorous data sanitization and encryption standards to mitigate XSS attacks and bolster application defenses.
+\end{itemize}
+
+\textbf{Software Engineer} \hfill July 2021 - June 2023\\
+BYJU'S (Think and Learn Private Limited) \hfill \textit{Bengaluru}
+\begin{itemize}
+\itemsep -3pt {}
+\item Owned Aakash CRP and Aakash Digital (BYJU’s Exam Prep) modules. Designed database schemas, scholarship and voucher logic, and built the modules from scratch.
+\item Implemented Redis caching, resulting in ~80 percent faster loading time on the product page in the KART microservice.
+\item Developed a self-serve upload utility using React, Redux, and TypeScript to reduce manual effort in seeding pricing data in Postgress, enabling near-instant synchronization of the Aakash Pricing Engine, saving time and effort for business leadership.
+\item Integrated Razorpay and Bajaj payment gateways to enable seamless EMI and non-EMI transactions in the application.
+\item Wrote AWS Lambda functions and exposed APIs to enable bulk order punching.
+\item Designed and developed rule engines for vouchers and sales programs for the Catalogue project using Java and Spring Boot.
+\item Worked on database migration from MongoDB to Postgres.
+\item Actively refactoring, optimization of the codebase and  troubleshooting the application using Datadog and Coralogix.
+\item Wrote reusable data-fix scripts to identify erroneous orders, park them, and send to downstream systems for reprocessing.
+\end{itemize}
+
+\textbf{Programmer Analyst Trainee} \hfill Nov 2020 - June 2021\\
+Cognizant Technology Solutions \hfill \textit{Chennai}
+\begin{itemize}
+\itemsep -3pt {}
+\item Worked on Bank of New York Mellon’s Big Data project.
+\item Optimized legacy SQL queries.
+\item Implemented multiple UI enhancements using React.js, jQuery, and JavaScript.
+\item Wrote Python scripts to detect noise in data and transform it into required formats.
+\item Explored AWS EC2 and S3 services, and Big Data technologies including Hadoop and PySpark.
+\end{itemize}
+
+\end{rSection} 
+
+%----------------------------------------------------------------------------------------
+%	WORK EXPERIENCE SECTION
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{PERSONAL PROJECTS}
+\vspace{-1.25em}
+\item \textbf{Grameena Health Care Portal - Major Project in College:} {Built a PHP- and JavaScript-based healthcare portal for rural centers that shares scheme information and real-time doctor availability, adds video-enabled attendance monitoring for administrators, and streamlines stock tracking; also implemented doctor self-attendance features to improve transparency and operational management across facilities.}
+\item \textbf{Video Preview and Down-loader} { A modern React,Nodejs application for downloading videos from YouTube, Facebook, Instagram, and other platforms with in-app preview capabilities }
+\item \textbf{MovieList App} { IMDB style movie listing app built with React and bootstrap }
+\item \textbf{Two factor Authentication App} { Authentication middleware with JWT and OTP}
+\item \textbf{Expense Splitter} { ExpressJs App to track and store Split among friends}
+\item \textbf{Tax Computation App} { Full stack application built using React, Node, Express, JWT authentication, MongoDB, Hosted in Vercel}
+\item \textbf {Portfolio site} { website built with HTML, CSS and BootStrap. }\href{https://ijazahamed108.github.io/Resume/} {checkout here}
+\item \textbf{Find my Projects here} \href{https://github.com/ijazahamed108}{GitHub}
+\end{rSection} 
+
+%----------------------------------------------------------------------------------------
+\begin{rSection}{Certifications} 
+\begin{itemize}
+\item The Complete 2021 Web Development Bootcamp — \href{https://www.udemy.com/certificate/UC-593e6348-b78c-43fc-8206-696a02ea86d5/}{[verify]}
+\item Web Design for Beginners: Real World Coding in HTML and CSS — \href{https://www.udemy.com/certificate/UC-29d78af9-7565-48ef-8cbc-ff14bdf3143f/}{[verify]}
+\item JavaScript Basics for Beginners — \href{https://www.udemy.com/certificate/UC-b5929f74-5484-473c-95f3-d1b57903bd5f/}{[verify]}
+\item AWS Amazon S3 Mastery BootCamp — \href{https://www.udemy.com/certificate/UC-49662fb9-c6da-4e10-a426-bba291ed9a63/}{[verify]}
+\item Apache Spark 3 — Spark Programming in Python for Beginners — \href{https://www.udemy.com/certificate/UC-36059c04-e3c8-4047-be7a-b7d6f7b9a3f3/}{[verify]}
+\item AWS Lambda and the Serverless Framework — Hands-on Learning — \href{https://www.udemy.com/certificate/UC-657e904f-f0e6-490c-a2fd-8d793cc254bb/}{[verify]}
+\item SQL Basics for Beginners — \href{https://www.udemy.com/certificate/UC-e5040773-9253-414e-ad8d-88a528520579/}{[verify]}
+\item Introduction to Git and GitHub — \href{https://www.coursera.org/account/accomplishments/verify/792ADQRBA9NW}{[verify]}
+\item Technical Support Fundamentals — \href{https://www.coursera.org/account/accomplishments/verify/LBRRGGG24VXL}{[verify]}
+\item Introduction to Virtual Reality — \href{https://www.coursera.org/account/accomplishments/verify/G7S88ZYKYVQP}{[verify]}
+\item AWS Fundamentals: Going Cloud Native — \href{https://www.coursera.org/account/accomplishments/verify/FMEG37UY9M8D}{[verify]}
+\item Python Data Structures — \href{https://www.coursera.org/account/accomplishments/verify/Q4FR8HV9WW9B}{[verify]}
+\end{itemize}
+
+
+\end{rSection}
+
+%----------------------------------------------------------------------------------------
+
+%----------------------------------------------------------------------------------------
+\begin{rSection}{Extra-Curricular Activities} 
+\begin{itemize}
+    \item 	I post travel vlogs and Gaming Content in my YouTube Channel \href{https://youtube.com/@ijazahamed108?feature=shared}{GETWAY} and  \href{https://instagram.com/ijaz__ahamed}{Instagram}.
+    \item  Member of NSS, Environmental Awareness Team RGMCET-2019, conducted Seminars in Rural schools to spread awareness on campus hygiene and classroom ethics.
+    \item Technical Coordinator RGMCET, 2020.
+\end{itemize}
+
+
+\end{rSection}
+
+%----------------------------------------------------------------------------------------
+
+\end{document}
