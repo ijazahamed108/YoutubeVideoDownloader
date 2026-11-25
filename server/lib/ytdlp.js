@@ -26,8 +26,8 @@ export function buildBaseArgs() {
     '--no-colors',
     '--socket-timeout', '30',
     '--retries', '3',
-    // Works around SABR / nsig extraction failures on the default web client.
-    '--extractor-args', 'youtube:player_client=android,web',
+    // Keep yt-dlp's default player clients; pinning e.g. "android" now yields
+    // SABR-only streams without URLs. Override via YT_DLP_EXTRA_ARGS if needed.
     ...extra
   ]
 }
@@ -41,9 +41,9 @@ async function probe(binary, args = ['--version']) {
   }
 }
 
-async function resolveBinary(candidates) {
+async function resolveBinary(candidates, versionArgs) {
   for (const candidate of candidates) {
-    const version = await probe(candidate)
+    const version = await probe(candidate, versionArgs)
     if (version !== null) return { path: candidate, version }
   }
   return null
@@ -64,11 +64,14 @@ export async function detectTools() {
       '/usr/local/bin/yt-dlp',
       `${home}/.local/bin/yt-dlp`,
       ...pythonBins
-    ].filter(Boolean)
+    ].filter(Boolean),
+    ['--version']
   )
 
+  // ffmpeg only understands the single-dash form.
   const ffmpeg = await resolveBinary(
-    [process.env.FFMPEG_PATH, 'ffmpeg', '/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg'].filter(Boolean)
+    [process.env.FFMPEG_PATH, 'ffmpeg', '/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg'].filter(Boolean),
+    ['-version']
   )
 
   return { ytDlp, ffmpeg }

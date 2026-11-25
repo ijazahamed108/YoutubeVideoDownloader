@@ -21,6 +21,17 @@ if ! command -v ffmpeg &> /dev/null; then
     echo "         Install it with: brew install ffmpeg  (or your package manager)"
 fi
 
+# Pick the Node version from .nvmrc when nvm is available.
+if [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]; then
+    # shellcheck disable=SC1091
+    . "${NVM_DIR:-$HOME/.nvm}/nvm.sh" && nvm use --silent || true
+fi
+
+# Trust the OS certificate store (needed behind TLS-inspecting proxies). Node >= 22.15.
+if node --use-system-ca -e 0 &> /dev/null; then
+    export NODE_OPTIONS="${NODE_OPTIONS:-} --use-system-ca"
+fi
+
 [ -d node_modules ] || { echo "Installing frontend dependencies..."; npm install; }
 [ -d server/node_modules ] || { echo "Installing backend dependencies..."; (cd server && npm install); }
 
