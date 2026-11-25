@@ -28,6 +28,8 @@ This installs dependencies (and yt-dlp if missing) and starts both servers:
 - Frontend: http://localhost:5173/YoutubeVideoDownloader/
 - Backend API: http://localhost:3001
 
+Behind a TLS-inspecting proxy (common on managed laptops) the preview proxy needs Node to trust the OS certificate store. `start.sh` enables `--use-system-ca` automatically on Node ≥ 22.15; when starting manually, run `NODE_OPTIONS=--use-system-ca npm run dev:server`.
+
 ### Manual start
 
 ```bash
