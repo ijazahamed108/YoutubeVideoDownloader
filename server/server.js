@@ -1,351 +1,213 @@
 import express from 'express'
 import cors from 'cors'
-import { spawn } from 'child_process'
-import { promisify } from 'util'
-import { exec } from 'child_process'
+import fs from 'fs'
+import path from 'path'
+import { randomUUID } from 'crypto'
+import { Readable } from 'stream'
+import { fileURLToPath } from 'url'
+import { TtlCache, RateLimiter } from './lib/cache.js'
+import { DownloadManager } from './lib/downloads.js'
+import { buildFormats, pickPreview, formatDuration, formatUploadDate } from './lib/formats.js'
+import { parseMediaUrl, isValidFormat } from './lib/validate.js'
+import { buildBaseArgs, detectTools, runYtDlp, YtDlpError } from './lib/ytdlp.js'
 
-const execAsync = promisify(exec)
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const PORT = Number(process.env.PORT) || 3001
+const DIST_DIR = path.resolve(__dirname, '../dist')
+const INFO_TIMEOUT_MS = Number(process.env.INFO_TIMEOUT_MS) || 60_000
+const MAX_CONCURRENT_DOWNLOADS = Number(process.env.MAX_CONCURRENT_DOWNLOADS) || 3
+
+const tools = await detectTools()
+if (!tools.ytDlp) {
+  console.error('yt-dlp was not found. Install it (pip3 install yt-dlp / brew install yt-dlp) or set YT_DLP_PATH.')
+} else {
+  console.log(`yt-dlp ${tools.ytDlp.version} at ${tools.ytDlp.path}`)
+}
+if (!tools.ffmpeg) {
+  console.warn('ffmpeg not found: merged (video-only + audio) formats will be hidden.')
+}
+
+const baseArgs = buildBaseArgs()
+const infoCache = new TtlCache({ ttlMs: 5 * 60_000, maxEntries: 100 })
+const previewUrls = new TtlCache({ ttlMs: 60 * 60_000, maxEntries: 200 })
+const downloads = new DownloadManager({
+  ytDlpPath: tools.ytDlp?.path,
+  baseArgs,
+  maxConcurrent: MAX_CONCURRENT_DOWNLOADS
+})
+const limiter = new RateLimiter({ windowMs: 60_000, max: 30 })
+
 const app = express()
-const PORT = process.env.PORT || 3001
+app.disable('x-powered-by')
+app.set('trust proxy', process.env.TRUST_PROXY === '1')
+app.use(cors(process.env.CORS_ORIGIN ? { origin: process.env.CORS_ORIGIN.split(',') } : undefined))
+app.use(express.json({ limit: '16kb' }))
 
-app.use(cors())
-app.use(express.json())
-
-// Find yt-dlp path
-let ytDlpPath = 'yt-dlp'
-
-// Work around YouTube web/tv client SABR and nsig extraction failures
-const YT_DLP_COMMON_ARGS = [
-  '--extractor-args', 'youtube:player_client=android,web'
-]
-
-const findYtDlp = async () => {
-  const possiblePaths = [
-    '/opt/homebrew/bin/yt-dlp',
-    '/usr/local/bin/yt-dlp',
-    'yt-dlp',
-    `${process.env.HOME}/.local/bin/yt-dlp`,
-    `${process.env.HOME}/Library/Python/3.12/bin/yt-dlp`,
-    `${process.env.HOME}/Library/Python/3.11/bin/yt-dlp`,
-    `${process.env.HOME}/Library/Python/3.10/bin/yt-dlp`,
-    `${process.env.HOME}/Library/Python/3.9/bin/yt-dlp`
-  ]
-  
-  for (const path of possiblePaths) {
-    try {
-      await execAsync(`${path} --version`)
-      ytDlpPath = path
-      console.log(`yt-dlp found at: ${path}`)
-      return
-    } catch (error) {
-      continue
-    }
+const requireYtDlp = (req, res, next) => {
+  if (!tools.ytDlp) {
+    return res.status(503).json({ error: 'yt-dlp is not installed on the server.' })
   }
-  
-  console.log('yt-dlp not found. Installing...')
-  try {
-    await execAsync('pip3 install yt-dlp')
-    await findYtDlp() // Try again after installation
-  } catch (installError) {
-    console.error('Failed to install yt-dlp:', installError.message)
-  }
+  next()
 }
 
-// Get video information and available formats
-function dedupeByHeight(formats) {
-  const byHeight = new Map()
-  for (const format of formats) {
-    const existing = byHeight.get(format.height)
-    if (!existing || (format.filesize || 0) > (existing.filesize || 0)) {
-      byHeight.set(format.height, format)
-    }
-  }
-  return [...byHeight.values()].sort((a, b) => b.height - a.height)
-}
+const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next)
 
-function dedupeByAbr(formats) {
-  const byAbr = new Map()
-  for (const format of formats) {
-    const key = format.abr || format.format_id
-    if (!byAbr.has(key)) {
-      byAbr.set(key, format)
-    }
-  }
-  return [...byAbr.values()].sort((a, b) => (b.abr || 0) - (a.abr || 0))
-}
-
-function buildFormats(allFormats) {
-  const combinedFormats = dedupeByHeight(
-    allFormats
-      .filter(f => f.vcodec && f.vcodec !== 'none' && f.acodec && f.acodec !== 'none' && f.height)
-      .map(f => ({
-        format_id: f.format_id,
-        ext: f.ext,
-        quality: `${f.height}p (Video + Audio)`,
-        filesize: f.filesize,
-        vcodec: f.vcodec,
-        acodec: f.acodec,
-        type: 'combined',
-        height: f.height
-      }))
-  )
-
-  const videoFormats = dedupeByHeight(
-    allFormats
-      .filter(f => f.vcodec && f.vcodec !== 'none' && f.height && (!f.acodec || f.acodec === 'none'))
-      .map(f => ({
-        format_id: `${f.format_id}+bestaudio`,
-        ext: 'mp4',
-        quality: `${f.height}p (Auto-merge Audio)`,
-        filesize: f.filesize,
-        vcodec: f.vcodec,
-        acodec: 'merged',
-        type: 'video',
-        height: f.height
-      }))
-  )
-
-  const audioFormats = dedupeByAbr(
-    allFormats
-      .filter(f => f.acodec && f.acodec !== 'none' && (!f.vcodec || f.vcodec === 'none'))
-      .map(f => ({
-        format_id: f.format_id,
-        ext: f.ext,
-        quality: `Audio Only (${f.abr || 'Unknown'}kbps)`,
-        filesize: f.filesize,
-        vcodec: f.vcodec,
-        acodec: f.acodec,
-        type: 'audio',
-        abr: f.abr
-      }))
-  )
-
-  return [...combinedFormats, ...videoFormats, ...audioFormats]
-}
-
-function getPreviewStream(allFormats, info) {
-  const combined = allFormats
-    .filter(f => f.vcodec && f.vcodec !== 'none' && f.acodec && f.acodec !== 'none' && f.url && f.height <= 720)
-    .sort((a, b) => b.height - a.height)
-
-  if (combined.length) {
-    return {
-      streamUrl: combined[0].url,
-      vcodec: combined[0].vcodec,
-      acodec: combined[0].acodec
-    }
-  }
-
-  const video = allFormats
-    .filter(f => f.vcodec && f.vcodec !== 'none' && f.url && f.height <= 720)
-    .sort((a, b) => b.height - a.height)
-
-  if (video.length) {
-    return {
-      streamUrl: video[0].url,
-      vcodec: video[0].vcodec,
-      acodec: 'none'
-    }
-  }
-
-  const audio = allFormats.filter(f => f.acodec && f.acodec !== 'none' && f.url)
-  if (audio.length) {
-    return {
-      streamUrl: audio[0].url,
-      vcodec: 'none',
-      acodec: audio[0].acodec
-    }
-  }
-
-  return {
-    streamUrl: info.url || null,
-    vcodec: info.vcodec,
-    acodec: info.acodec
-  }
-}
-
-app.post('/api/video-info', async (req, res) => {
-  const { url } = req.body
-  
-  if (!url) {
-    return res.status(400).json({ error: 'URL is required' })
-  }
-
-  try {
-    const { stdout } = await execAsync(
-      `${ytDlpPath} -J --extractor-args "youtube:player_client=android,web" "${url}"`
-    )
-    const info = JSON.parse(stdout)
-    
-    const allFormats = info.formats || []
-    const formats = buildFormats(allFormats)
-    const preview = getPreviewStream(allFormats, info)
-
-    res.json({
-      info: {
-        title: info.title,
-        thumbnail: info.thumbnail,
-        duration: formatDuration(info.duration),
-        uploader: info.uploader,
-        view_count: info.view_count,
-        upload_date: info.upload_date,
-        vcodec: preview.vcodec,
-        acodec: preview.acodec
-      },
-      formats,
-      streamUrl: preview.streamUrl
-    })
-  } catch (error) {
-    console.error('Error fetching video info:', error)
-    res.status(500).json({ error: 'Failed to fetch video information' })
-  }
+app.get('/api/health', (req, res) => {
+  res.json({
+    ok: Boolean(tools.ytDlp),
+    ytDlp: tools.ytDlp?.version || null,
+    ffmpeg: Boolean(tools.ffmpeg),
+    activeDownloads: downloads.activeCount
+  })
 })
 
-// Download video with progress
-app.post('/api/download', async (req, res) => {
-  const { url, format } = req.body
-  
-  if (!url || !format) {
-    return res.status(400).json({ error: 'URL and format are required' })
+app.post('/api/video-info', limiter.middleware(), requireYtDlp, asyncHandler(async (req, res) => {
+  const url = parseMediaUrl(req.body?.url)
+  if (!url) return res.status(400).json({ error: 'Please enter a valid http(s) video URL.' })
+
+  const cached = infoCache.get(url)
+  if (cached) return res.json(cached)
+
+  const stdout = await runYtDlp(tools.ytDlp.path, ['-J', ...baseArgs, url], { timeoutMs: INFO_TIMEOUT_MS })
+  const info = JSON.parse(stdout)
+  const allFormats = info.formats || []
+  const preview = pickPreview(allFormats, info)
+
+  let streamUrl = null
+  if (preview?.url) {
+    // Hand the browser a same-origin URL; direct CDN links are IP-locked to
+    // this server and often blocked by CORS.
+    const token = randomUUID()
+    previewUrls.set(token, preview.url)
+    streamUrl = `/api/preview/${token}`
   }
 
-  try {
-    const ytDlp = spawn(ytDlpPath, [
-      '-f', format,
-      '--no-playlist',
-      '--newline',
-      ...YT_DLP_COMMON_ARGS,
-      '-o', '-',
-      url
-    ])
-
-    res.setHeader('Content-Type', 'application/octet-stream')
-    res.setHeader('Content-Disposition', 'attachment')
-
-    ytDlp.stdout.pipe(res)
-    
-    ytDlp.stderr.on('data', (data) => {
-      const output = data.toString()
-      console.log('yt-dlp progress:', output)
-    })
-
-    ytDlp.on('close', (code) => {
-      if (code !== 0) {
-        console.error(`yt-dlp process exited with code ${code}`)
-      }
-    })
-
-    ytDlp.on('error', (error) => {
-      console.error('yt-dlp error:', error)
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'Download failed' })
-      }
-    })
-  } catch (error) {
-    console.error('Download error:', error)
-    res.status(500).json({ error: 'Download failed' })
-  }
-})
-
-// Get download progress
-app.post('/api/download-progress', async (req, res) => {
-  const { url, format } = req.body
-  
-  if (!url || !format) {
-    return res.status(400).json({ error: 'URL and format are required' })
+  const payload = {
+    info: {
+      title: info.title || 'Untitled',
+      thumbnail: info.thumbnail || null,
+      duration: formatDuration(info.duration),
+      uploader: info.uploader || info.channel || null,
+      view_count: info.view_count ?? null,
+      upload_date: formatUploadDate(info.upload_date),
+      webpage_url: info.webpage_url || url,
+      previewKind: preview?.kind || null,
+      previewMime: preview?.mime || null
+    },
+    formats: buildFormats(allFormats, { ffmpegAvailable: Boolean(tools.ffmpeg) }),
+    streamUrl
   }
 
-  res.writeHead(200, {
-    'Content-Type': 'text/plain',
-    'Transfer-Encoding': 'chunked'
+  infoCache.set(url, payload)
+  res.json(payload)
+}))
+
+// Proxies the preview stream with Range support so seeking works.
+app.get('/api/preview/:token', asyncHandler(async (req, res) => {
+  const upstreamUrl = previewUrls.get(req.params.token)
+  if (!upstreamUrl) return res.status(404).json({ error: 'Preview expired. Re-analyse the URL.' })
+
+  // Abort the upstream fetch if the browser goes away mid-stream.
+  const controller = new AbortController()
+  res.on('close', () => {
+    if (!res.writableFinished) controller.abort()
   })
 
+  const headers = { 'User-Agent': 'Mozilla/5.0' }
+  if (req.headers.range) headers.Range = req.headers.range
+
+  let upstream
   try {
-    const ytDlp = spawn(ytDlpPath, [
-      '-f', format,
-      '--no-playlist',
-      '--newline',
-      '--progress',
-      '--no-warnings',
-      ...YT_DLP_COMMON_ARGS,
-      '-o', '-',
-      url
-    ])
-
-    ytDlp.stderr.on('data', (data) => {
-      const output = data.toString()
-      const progressMatch = output.match(/\[download\]\s+(\d+\.\d+)%/)
-      if (progressMatch) {
-        res.write(`data: ${progressMatch[1]}\n\n`)
-      }
-    })
-
-    ytDlp.on('close', (code) => {
-      res.write('data: 100\n\n')
-      res.end()
-    })
-
-    ytDlp.on('error', (error) => {
-      res.write(`error: ${error.message}\n\n`)
-      res.end()
-    })
-  } catch (error) {
-    res.write(`error: ${error.message}\n\n`)
-    res.end()
+    upstream = await fetch(upstreamUrl, { headers, signal: controller.signal })
+  } catch (err) {
+    if (controller.signal.aborted) return
+    console.error('[preview] upstream fetch failed:', err.cause?.code || err.message)
+    return res.status(502).json({ error: 'Could not fetch preview stream.' })
   }
+
+  if (!upstream.ok && upstream.status !== 206) {
+    return res.status(502).json({ error: `Upstream returned ${upstream.status}.` })
+  }
+
+  res.status(upstream.status)
+  for (const name of ['content-type', 'content-length', 'content-range', 'accept-ranges']) {
+    const value = upstream.headers.get(name)
+    if (value) res.setHeader(name, value)
+  }
+  res.setHeader('Cache-Control', 'no-store')
+
+  Readable.fromWeb(upstream.body)
+    .on('error', () => res.destroy())
+    .pipe(res)
+}))
+
+app.post('/api/download', limiter.middleware(), requireYtDlp, asyncHandler(async (req, res) => {
+  const url = parseMediaUrl(req.body?.url)
+  const { format, title } = req.body || {}
+  if (!url) return res.status(400).json({ error: 'Please enter a valid http(s) video URL.' })
+  if (!isValidFormat(format)) return res.status(400).json({ error: 'Invalid format selection.' })
+
+  const job = await downloads.create({ url, format, title: typeof title === 'string' ? title : undefined })
+  res.status(202).json(downloads.toJSON(job))
+}))
+
+app.get('/api/download/:id', (req, res) => {
+  const job = downloads.get(req.params.id)
+  if (!job) return res.status(404).json({ error: 'Download not found or expired.' })
+  res.json(downloads.toJSON(job))
 })
 
-// Get stream URL for preview
-app.post('/api/stream-info', async (req, res) => {
-  const { url } = req.body
-  
-  if (!url) {
-    return res.status(400).json({ error: 'URL is required' })
-  }
+app.delete('/api/download/:id', asyncHandler(async (req, res) => {
+  const cancelled = await downloads.cancel(req.params.id)
+  res.status(cancelled ? 200 : 404).json({ cancelled })
+}))
 
-  try {
-    const { stdout } = await execAsync(
-      `${ytDlpPath} -J -f "best[height<=720]" --extractor-args "youtube:player_client=android,web" "${url}"`
-    )
-    const info = JSON.parse(stdout)
-    
-    // Get the best quality stream URL for preview
-    const streamUrl = info.url || info.formats?.[0]?.url
-    
-    res.json({
-      info: {
-        title: info.title,
-        thumbnail: info.thumbnail,
-        duration: formatDuration(info.duration),
-        uploader: info.uploader,
-        view_count: info.view_count,
-        upload_date: info.upload_date,
-        vcodec: info.vcodec,
-        acodec: info.acodec
-      },
-      streamUrl
-    })
-  } catch (error) {
-    console.error('Error fetching stream info:', error)
-    res.status(500).json({ error: 'Failed to fetch stream information' })
-  }
+app.get('/api/download/:id/file', (req, res) => {
+  const job = downloads.get(req.params.id)
+  if (!job) return res.status(404).json({ error: 'Download not found or expired.' })
+  if (job.status !== 'ready') return res.status(409).json({ error: 'Download is not ready yet.' })
+
+  res.download(job.filePath, job.fileName, { cacheControl: false }, (err) => {
+    if (err && !res.headersSent) res.status(500).json({ error: 'Failed to send file.' })
+    // Allow a brief window for browser retries, then free the disk space.
+    if (!err) downloads.scheduleRemoval(job.id)
+  })
 })
 
-// Utility function to format duration
-function formatDuration(seconds) {
-  if (!seconds) return 'Unknown'
-  
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const secs = Math.floor(seconds % 60)
-  
-  if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-  return `${minutes}:${secs.toString().padStart(2, '0')}`
+// Serve the built frontend when present (Docker / production).
+if (fs.existsSync(DIST_DIR)) {
+  app.use(express.static(DIST_DIR, { index: 'index.html', maxAge: '1h' }))
+  app.get(/^\/(?!api\/).*/, (req, res) => res.sendFile(path.join(DIST_DIR, 'index.html')))
 }
 
-app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`)
-  await findYtDlp()
+app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }))
+
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  if (err instanceof YtDlpError) {
+    if (err.details) console.error(`[yt-dlp] ${err.details.trim().split('\n').slice(-3).join(' | ')}`)
+    return res.status(err.status).json({ error: err.message })
+  }
+  if (err.type === 'entity.parse.failed' || err.type === 'entity.too.large') {
+    return res.status(400).json({ error: 'Invalid request body.' })
+  }
+  if (err.status) return res.status(err.status).json({ error: err.message })
+  console.error(err)
+  res.status(500).json({ error: 'Internal server error.' })
 })
+
+const server = app.listen(PORT, () => {
+  console.log(`Server listening on http://localhost:${PORT}`)
+})
+
+let shuttingDown = false
+const shutdown = async (signal) => {
+  if (shuttingDown) return
+  shuttingDown = true
+  console.log(`\n${signal} received, shutting down...`)
+  server.close()
+  await downloads.shutdown()
+  process.exit(0)
+}
+process.on('SIGINT', () => shutdown('SIGINT'))
+process.on('SIGTERM', () => shutdown('SIGTERM'))
