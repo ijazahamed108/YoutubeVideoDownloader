@@ -1,10 +1,11 @@
 #!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
 
-echo "🚀 Starting Video Downloader Application"
+echo "Starting Video Downloader"
 
-# Check if yt-dlp is installed
-if ! command -v yt-dlp &> /dev/null; then
-    echo "📦 Installing yt-dlp..."
+install_ytdlp() {
+    echo "Installing yt-dlp..."
     if command -v brew &> /dev/null; then
         brew install yt-dlp
     elif command -v pipx &> /dev/null; then
@@ -12,32 +13,23 @@ if ! command -v yt-dlp &> /dev/null; then
     else
         pip3 install --user yt-dlp || pip3 install yt-dlp --break-system-packages
     fi
+}
+
+command -v yt-dlp &> /dev/null || install_ytdlp
+if ! command -v ffmpeg &> /dev/null; then
+    echo "Warning: ffmpeg not found. Merged (video-only + audio) formats will be hidden."
+    echo "         Install it with: brew install ffmpeg  (or your package manager)"
 fi
 
-# Install frontend dependencies
-echo "📦 Installing frontend dependencies..."
-npm install
+[ -d node_modules ] || { echo "Installing frontend dependencies..."; npm install; }
+[ -d server/node_modules ] || { echo "Installing backend dependencies..."; (cd server && npm install); }
 
-# Install backend dependencies
-echo "📦 Installing backend dependencies..."
-cd server
-npm install
-cd ..
+echo "Frontend: http://localhost:5173/YoutubeVideoDownloader/"
+echo "Backend:  http://localhost:3001"
 
-# Start the application
-echo "🎬 Starting the application..."
-echo "Frontend will be available at: http://localhost:5173"
-echo "Backend API will be available at: http://localhost:3001"
+# Stop both processes together on Ctrl+C.
+trap 'kill 0' EXIT INT TERM
 
-# Start backend in background
-cd server
+(cd server && npm run dev) &
 npm run dev &
-BACKEND_PID=$!
-cd ..
-
-# Start frontend
-npm run dev &
-FRONTEND_PID=$!
-
-# Wait for both processes
-wait $BACKEND_PID $FRONTEND_PID
+wait

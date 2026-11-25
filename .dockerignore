@@ -1,0 +1,11 @@
+node_modules
+server/node_modules
+dist
+.git
+.github
+downloads
+*.log
+.env*
+ijaz_resume.html
+generate-pdf.js
+package-resume.json
